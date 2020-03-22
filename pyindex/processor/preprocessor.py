@@ -27,7 +27,7 @@ class PreProcessor(Processor):
             if t  == "":
                 t = None
             else:
-                t = int(t)
+                t = float(t)
             fresult.append(t)
 
         self.current_id +=  1
