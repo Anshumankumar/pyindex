@@ -12,22 +12,32 @@ class Indexer(Processor):
         self.sindex = defaultdict(list)        
         self.imap = []
         self.sindexlist = []
+        self.aindex = defaultdict(lambda:defaultdict(lambda: 0.0))
 
     def process_doc(self, docid, doc, score):
         if type(doc) is not list:
             self.index[doc].append(docid)
             self.cscore[doc] += score
             return
- 
+        
         for y in doc:
            for z in y.split():
                 self.index[z].append(docid)     
                 self.cscore[z] += score
     
+    def auto_complete_index(self, doc,  score):
+        for y  in doc:
+            self.aindex[y[0:3]][y]  += score
+        
+
     def process_next(self, current):
         docid = current[0]
         self.imap.append(current[1])
         score = current[-1]
+        
+        self.auto_complete_index(current[2], score)
+        if (current[2][0] == "jiya dhadak dhadak jaye from quotkalyugquot"):
+            print(current)
         for x in current[2:-1]:
             self.process_doc(docid, x, score)
         return True
@@ -43,6 +53,10 @@ class Indexer(Processor):
                 else:
                     nstr = x[i:len(x)] + "$" + x[0:i+3-len(x)]
                 self.sindex[nstr].append(nindex)
+            
+            self.sindex['$' + x[0:3] ].append(nindex)
+            self.sindex['$' + x[0:4] ].append(nindex)
+            
             self.sindexlist.append(x)
             nindex += 1
             if (self.cscore[x] > 0):
@@ -58,4 +72,9 @@ class Indexer(Processor):
             continue
         for key in self.index.keys():
             self.index[key] = np.unique(np.array(self.index[key]))
+        for key in self.aindex.keys():
+            self.aindex[key] = [(x,y) for x,y in self.aindex[key].items()]
+            self.aindex[key].sort(key = lambda x:x[1], reverse=True)
+            self.aindex[key] = [x[0] for x in self.aindex[key]]
+
         self.create_secondary()
